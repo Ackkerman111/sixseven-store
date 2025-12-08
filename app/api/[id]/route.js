@@ -1,6 +1,6 @@
-// app/api/products/[id]/route.js
+// app/api/[id]/route.js
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export async function PUT(request, { params }) {
   const id = Number(params.id);
