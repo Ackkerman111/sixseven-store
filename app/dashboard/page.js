@@ -28,31 +28,30 @@ export default function DashboardPage() {
     loadProducts();
   }, []);
 
-  // 🔥 IMAGE UPLOAD
   const uploadImages = async (files) => {
-    const urls = [];
+  const urls = [];
 
-    for (const file of files) {
-      const fileName = `${Date.now()}-${file.name}`;
+  for (const file of files) {
+    const fileName = `${Date.now()}-${file.name}`;
 
-      const { error } = await supabase.storage
-        .from("products")
-        .upload(fileName, file);
+    const { error } = await supabase.storage
+      .from("product-images")
+      .upload(fileName, file);
 
-      if (error) {
-        alert("Image upload failed: " + error.message);
-        return [];
-      }
-
-      const { data } = supabase.storage
-        .from("products")
-        .getPublicUrl(fileName);
-
-      urls.push(data.publicUrl);
+    if (error) {
+      alert("Image upload failed: " + error.message);
+      return [];
     }
 
-    return urls;
-  };
+    const { data } = supabase.storage
+      .from("product-images")
+      .getPublicUrl(fileName);
+
+    urls.push(data.publicUrl);
+  }
+
+  return urls;
+};
 
   const saveProduct = async () => {
     if (!form.name || !form.price) {
