@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabaseStorage } from "../../lib/supabaseStorage";
+import { supabase } from "../../lib/supabaseClient";
 
 const emptyProduct = {
   name: "",
   price: "",
   color: "",
   size: "",
-  tag: "",
-  image_url: ""
+  tag: ""
 };
 
 export default function DashboardPage() {
@@ -29,22 +28,23 @@ export default function DashboardPage() {
     loadProducts();
   }, []);
 
+  // 🔥 IMAGE UPLOAD
   const uploadImages = async (files) => {
     const urls = [];
 
     for (const file of files) {
       const fileName = `${Date.now()}-${file.name}`;
 
-      const { error } = await supabaseStorage.storage
+      const { error } = await supabase.storage
         .from("products")
         .upload(fileName, file);
 
       if (error) {
-        alert("Image upload failed");
+        alert("Image upload failed: " + error.message);
         return [];
       }
 
-      const { data } = supabaseStorage.storage
+      const { data } = supabase.storage
         .from("products")
         .getPublicUrl(fileName);
 
@@ -128,6 +128,23 @@ export default function DashboardPage() {
         onChange={(e) => setForm({ ...form, price: e.target.value })}
       />
       <input
+        placeholder="Color"
+        value={form.color}
+        onChange={(e) => setForm({ ...form, color: e.target.value })}
+      />
+      <input
+        placeholder="Size"
+        value={form.size}
+        onChange={(e) => setForm({ ...form, size: e.target.value })}
+      />
+      <input
+        placeholder="Tag"
+        value={form.tag}
+        onChange={(e) => setForm({ ...form, tag: e.target.value })}
+      />
+
+      {/* 🔥 IMAGE PICKER */}
+      <input
         type="file"
         multiple
         accept="image/*"
@@ -135,17 +152,23 @@ export default function DashboardPage() {
       />
 
       <button onClick={saveProduct} disabled={loading}>
-        {loading ? "Saving..." : editingId ? "Update" : "Add"}
+        {loading ? "Saving..." : editingId ? "Update" : "Add Product"}
       </button>
 
       <hr />
 
+      <h3>All Products</h3>
       {products.map((p) => (
-        <div key={p.id}>
+        <div key={p.id} style={{ marginBottom: 10 }}>
           <b>{p.name}</b> – ₹{p.price}
-          <button onClick={() => deleteProduct(p.id)}>Delete</button>
+          <button
+            style={{ marginLeft: 10 }}
+            onClick={() => deleteProduct(p.id)}
+          >
+            Delete
+          </button>
         </div>
       ))}
     </div>
   );
-}
+          }
