@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -97,13 +98,21 @@ export default function StorePage() {
             return (
               <article key={p.id} className="product-card">
                 <div className="product-img">
-                  {p.image_url ? (
-                    // you can later use <img src={p.image_url} />
-                    <span>Image</span>
-                  ) : (
-                    <span>Preview {p.id}</span>
-                  )}
-                </div>
+  {p.images && p.images.length > 0 ? (
+    <img
+      src={p.images[0]}
+      alt={p.name}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        borderRadius: "10px"
+      }}
+    />
+  ) : (
+    <span>No Image</span>
+  )}
+</div>
 
                 <div className="product-brand">Six Seven</div>
                 <div className="product-name">{p.name}</div>
