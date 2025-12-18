@@ -16,11 +16,20 @@ export async function GET() {
 
 export async function POST(request) {
   const body = await request.json();
-  const { name, price, color, size, tag, image_url, images } = body;
+  const { name, price, color, size, tag, images } = body;
 
   const { data, error } = await supabaseAdmin
     .from("products")
-    .insert([{ name, price, color, size, tag, image_url, images }])
+    .insert([
+      {
+        name,
+        price,
+        color,
+        size,
+        tag,
+        images
+      }
+    ])
     .select()
     .single();
 
