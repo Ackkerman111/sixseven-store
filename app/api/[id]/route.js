@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export async function PUT(request, { params }) {
   const id = params.id; // ✅ FIXED (uuid, not Number)
