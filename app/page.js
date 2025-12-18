@@ -53,7 +53,7 @@ export default function StorePage() {
     <>
       <header className="store-header">
         <div>
-          <div className="store-title">Six Seven Clothing</div>
+          <div className="store-title">Six Seven Clothing Store</div>
           <div className="brand-badge">Streetwear • Minimal • Daily Fits</div>
         </div>
 
