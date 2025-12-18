@@ -1,4 +1,3 @@
-// app/api/products/route.js
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
@@ -17,18 +16,11 @@ export async function GET() {
 
 export async function POST(request) {
   const body = await request.json();
-  const { name, price, color, size, tag, image_url } = body;
-
-  if (!name || !price) {
-    return NextResponse.json(
-      { error: "Name and price required" },
-      { status: 400 }
-    );
-  }
+  const { name, price, color, size, tag, image_url, images } = body;
 
   const { data, error } = await supabaseAdmin
     .from("products")
-    .insert([{ name, price, color, size, tag, image_url }])
+    .insert([{ name, price, color, size, tag, image_url, images }])
     .select()
     .single();
 
