@@ -114,7 +114,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-      <h1>Admin Dashboard</h1>
+      <h1>Seller Dashboard</h1>
 
       <input
         placeholder="Name"
@@ -171,4 +171,4 @@ export default function DashboardPage() {
       ))}
     </div>
   );
-          }
+      }
