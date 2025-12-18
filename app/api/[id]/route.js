@@ -1,15 +1,13 @@
-// app/api/[id]/route.js
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 
 export async function PUT(request, { params }) {
-  const id = Number(params.id);
+  const id = params.id; // ✅ FIXED (uuid, not Number)
   const body = await request.json();
-  const { name, price, color, size, tag, image_url } = body;
 
   const { data, error } = await supabaseAdmin
     .from("products")
-    .update({ name, price, color, size, tag, image_url })
+    .update(body)
     .eq("id", id)
     .select()
     .single();
@@ -22,7 +20,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const id = Number(params.id);
+  const id = params.id; // ✅ FIXED
 
   const { error } = await supabaseAdmin
     .from("products")
