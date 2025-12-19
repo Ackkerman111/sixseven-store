@@ -3,57 +3,100 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
+/* =========================
+   Image component (Shimmer)
+   ========================= */
+function ProductImage({ images, name }) {
+  const [loaded, setLoaded] = useState(false);
+
+  const src =
+    Array.isArray(images) && images.length > 0 ? images[0] : null;
+
+  return (
+    <div className={`product-img ${!loaded ? "shimmer" : ""}`}>
+      {src ? (
+        <img
+          src={src}
+          alt={name}
+          onLoad={() => setLoaded(true)}
+          style={{
+            display: loaded ? "block" : "none"
+          }}
+        />
+      ) : (
+        <span>No Image</span>
+      )}
+    </div>
+  );
+}
+
+/* =========================
+   Store Page
+   ========================= */
 export default function StorePage() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [wishlist, setWishlist] = useState([]);
   const [cart, setCart] = useState([]);
-  const [activeImage, setActiveImage] = useState({});
 
+  /* Load products */
   const loadProducts = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("products")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (data) setProducts(data);
+    if (!error && data) setProducts(data);
   };
 
   useEffect(() => {
     loadProducts();
   }, []);
 
+  /* Search filter */
   const filteredProducts = useMemo(() => {
     const term = search.toLowerCase().trim();
     if (!term) return products;
+
     return products.filter((p) =>
-      (p.name + " " + (p.color || "") + " " + (p.tag || ""))
+      `${p.name} ${p.color || ""} ${p.tag || ""}`
         .toLowerCase()
         .includes(term)
     );
   }, [products, search]);
 
-  const nextImage = (id, total) => {
-    setActiveImage((prev) => ({
-      ...prev,
-      [id]: ((prev[id] ?? 0) + 1) % total
-    }));
+  /* Wishlist */
+  const toggleWishlist = (productId) => {
+    setWishlist((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
   };
 
-  const prevImage = (id, total) => {
-    setActiveImage((prev) => ({
-      ...prev,
-      [id]: ((prev[id] ?? 0) - 1 + total) % total
-    }));
+  /* Cart */
+  const addToCart = (product) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
   };
 
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <>
+      {/* Header */}
       <header className="store-header">
         <div>
-          <div className="store-title">Six Seven Clothing Store</div>
+          <div className="store-title">Six Seven Clothing</div>
           <div className="brand-badge">Streetwear • Minimal • Daily Fits</div>
         </div>
 
@@ -72,96 +115,74 @@ export default function StorePage() {
         </div>
       </header>
 
+      {/* Main */}
       <main className="store-main">
+        <div className="info-bar">
+          <span>
+            Showing{" "}
+            <span className="info-highlight">
+              {filteredProducts.length}
+            </span>{" "}
+            products
+          </span>
+          <span>Tap ♥ to save, “Buy” adds to cart (no payment yet).</span>
+        </div>
+
+        {/* Products */}
         <section className="product-grid">
           {filteredProducts.map((p) => {
-            const images = p.images || [];
-            const index = activeImage[p.id] ?? 0;
+            const wished = wishlist.includes(p.id);
 
             return (
               <article key={p.id} className="product-card">
-                {/* IMAGE SLIDER */}
-                <div
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    aspectRatio: "1 / 1",
-                    overflow: "hidden",
-                    borderRadius: 12
-                  }}
-                >
-                  {images.length > 0 ? (
-                    <img
-                      src={images[index]}
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover"
-                      }}
-                    />
-                  ) : (
-                    <div style={{ textAlign: "center", paddingTop: 60 }}>
-                      No Image
-                    </div>
-                  )}
+                {/* Image */}
+                <ProductImage images={p.images} name={p.name} />
 
-                  {images.length > 1 && (
-                    <>
-                      <button
-                        onClick={() => prevImage(p.id, images.length)}
-                        style={sliderBtn("left")}
-                      >
-                        ‹
-                      </button>
-                      <button
-                        onClick={() => nextImage(p.id, images.length)}
-                        style={sliderBtn("right")}
-                      >
-                        ›
-                      </button>
-                    </>
-                  )}
+                <div className="product-brand">Six Seven</div>
+                <div className="product-name">{p.name}</div>
+
+                <div className="product-meta">
+                  <div>
+                    <div className="product-price">₹{p.price}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                      {p.color || "Color free"} • {p.size || "Free size"}
+                    </div>
+                  </div>
+                  {p.tag && <span className="product-tag">{p.tag}</span>}
                 </div>
 
-                {/* DOTS */}
-                {images.length > 1 && (
-                  <div style={{ display: "flex", justifyContent: "center", gap: 5, marginTop: 6 }}>
-                    {images.map((_, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          background: i === index ? "#111" : "#ccc"
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <div className="product-name">{p.name}</div>
-                <div className="product-price">₹{p.price}</div>
+                <div className="card-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => addToCart(p)}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    className={
+                      "btn btn-ghost" + (wished ? " active" : "")
+                    }
+                    onClick={() => toggleWishlist(p.id)}
+                  >
+                    {wished ? "♥" : "♡"}
+                  </button>
+                </div>
               </article>
             );
           })}
         </section>
+
+        {/* Footer */}
+        <div className="footer-summary">
+          <div>
+            <span className="badge">Cart items: {cartCount}</span>{" "}
+            <span className="badge">Wishlist: {wishlist.length}</span>
+          </div>
+          <div>
+            Later we can connect wishlist/cart to Supabase & add payments.
+          </div>
+        </div>
       </main>
     </>
   );
-}
-
-const sliderBtn = (side) => ({
-  position: "absolute",
-  top: "50%",
-  [side]: 8,
-  transform: "translateY(-50%)",
-  background: "rgba(0,0,0,0.6)",
-  color: "#fff",
-  border: "none",
-  borderRadius: "50%",
-  width: 30,
-  height: 30,
-  cursor: "pointer"
-});
+    }
