@@ -2,67 +2,70 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabaseClient";
-import { 
-  ArrowLeft, ShoppingCart, Heart, Share2, 
-  Star, Truck, Shield, RefreshCw, Check,
-  ChevronRight, Minus, Plus
-} from "lucide-react";
 import Link from "next/link";
+import { supabase } from "../../../lib/supabaseClient";
+import { ArrowLeft, ShoppingBag, Plus, Minus, Check } from "lucide-react";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [product, setProduct] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("details");
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     loadProduct();
+    updateCartCount();
   }, [params.id]);
 
   const loadProduct = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("products")
       .select("*")
       .eq("id", params.id)
       .single();
     
-    if (!error && data) {
+    if (data) {
       setProduct(data);
-      if (data.availableSizes?.length > 0) {
+      if (data.availableSizes?.[0]) {
         setSelectedSize(data.availableSizes[0]);
       }
-      if (data.availableColors?.length > 0) {
+      if (data.availableColors?.[0]) {
         setSelectedColor(data.availableColors[0]);
       }
     }
     setLoading(false);
   };
 
+  const updateCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem('sixseven_cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    setCartCount(count);
+  };
+
   const addToCart = () => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (!selectedSize) {
+      alert("Please select a size");
+      return;
+    }
+
+    const cart = JSON.parse(localStorage.getItem('sixseven_cart') || '[]');
     
-    const existingItem = cart.find(item => 
+    // Check if same product with same size and color already exists
+    const existingIndex = cart.findIndex(item => 
       item.id === product.id && 
       item.selectedSize === selectedSize && 
       item.selectedColor === selectedColor
     );
-    
+
     let newCart;
-    if (existingItem) {
-      newCart = cart.map(item =>
-        item.id === product.id && 
-        item.selectedSize === selectedSize && 
-        item.selectedColor === selectedColor
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      );
+    if (existingIndex > -1) {
+      newCart = [...cart];
+      newCart[existingIndex].quantity += quantity;
     } else {
       newCart = [...cart, {
         ...product,
@@ -71,33 +74,29 @@ export default function ProductDetailPage() {
         selectedColor
       }];
     }
-    
-    localStorage.setItem('cart', JSON.stringify(newCart));
+
+    localStorage.setItem('sixseven_cart', JSON.stringify(newCart));
+    updateCartCount();
     alert('Added to cart successfully!');
   };
 
   const buyNow = () => {
     addToCart();
-    router.push('/checkout');
+    router.push('/cart');
   };
 
-  const sizes = ["28", "30", "32", "34", "36", "38"];
-  const colors = [
-    { name: "Black", value: "#000000" },
-    { name: "Blue", value: "#3b82f6" },
-    { name: "Gray", value: "#6b7280" },
-    { name: "White", value: "#ffffff", border: "1px solid #d1d5db" }
-  ];
+  const sizes = product?.availableSizes || ["S", "M", "L", "XL"];
+  const colors = product?.availableColors || ["Black", "White", "Gray"];
 
   if (loading) {
     return (
-      <div className="product-detail-container">
+      <div className="product-detail-page">
         <div className="p-4">
-          <div className="loading mb-4" style={{ height: '300px' }}></div>
-          <div className="space-y-3">
-            <div className="loading" style={{ height: '30px', width: '80%' }}></div>
-            <div className="loading" style={{ height: '20px', width: '60%' }}></div>
-            <div className="loading" style={{ height: '20px', width: '40%' }}></div>
+          <div className="loading mb-6" style={{ height: '400px' }}></div>
+          <div className="space-y-4">
+            <div className="loading" style={{ height: '32px', width: '70%' }}></div>
+            <div className="loading" style={{ height: '40px', width: '40%' }}></div>
+            <div className="loading" style={{ height: '24px', width: '60%' }}></div>
           </div>
         </div>
       </div>
@@ -116,90 +115,38 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="product-detail-container">
+    <div className="product-detail-page">
       {/* Header */}
-      <header className="store-header">
+      <div className="store-header">
         <div className="header-container">
-          <button onClick={() => router.back()} className="flex items-center gap-2">
+          <button onClick={() => router.back()}>
             <ArrowLeft size={24} />
           </button>
-          <Link href="/" className="brand-logo">
-            SIXSEVEN
+          <Link href="/" className="brand-logo">SIXSEVEN</Link>
+          <Link href="/cart" className="header-icon-btn">
+            <ShoppingBag size={24} />
+            {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/cart" className="relative">
-              <ShoppingCart size={24} />
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Breadcrumb */}
-      <div className="container py-3">
-        <div className="breadcrumb">
-          <Link href="/">Home</Link>
-          <ChevronRight size={16} />
-          <Link href="/products">Products</Link>
-          <ChevronRight size={16} />
-          <span>{product.name}</span>
         </div>
       </div>
 
       {/* Product Gallery */}
       <div className="product-gallery">
-        <div className="container">
-          <img 
-            src={product.images?.[selectedImage] || '/placeholder.jpg'} 
-            alt={product.name}
-            className="main-image"
-          />
-          
-          {product.images && product.images.length > 1 && (
-            <div className="image-thumbnails">
-              {product.images.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`${product.name} ${index + 1}`}
-                  className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
-                  onClick={() => setSelectedImage(index)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <img 
+          src={product.images?.[0] || '/placeholder.jpg'} 
+          alt={product.name}
+          className="main-image"
+        />
       </div>
 
       {/* Product Info */}
-      <div className="product-info-detail container">
-        <h1 className="product-title-detail">{product.name}</h1>
-        
-        <div className="product-rating-detail">
-          <div className="rating-box">
-            <Star size={14} fill="white" />
-            <span>4.2</span>
-          </div>
-          <span className="text-gray-500">2,458 Ratings & 589 Reviews</span>
-        </div>
-        
-        <div className="price-section">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="current-price-detail">₹{product.price?.toLocaleString()}</span>
-            {product.originalPrice && (
-              <>
-                <span className="original-price-detail">₹{product.originalPrice?.toLocaleString()}</span>
-                <span className="discount-percent-detail">
-                  {Math.round((1 - product.price/product.originalPrice) * 100)}% off
-                </span>
-              </>
-            )}
-          </div>
-          <div className="tax-info">Inclusive of all taxes</div>
-        </div>
+      <div className="product-info-section">
+        <h1 className="product-title">{product.name}</h1>
+        <div className="product-price">₹{product.price?.toLocaleString()}</div>
         
         {/* Size Selection */}
         <div className="size-section">
-          <div className="section-title">Select Size</div>
+          <div className="section-title">SELECT SIZE</div>
           <div className="size-options">
             {sizes.map(size => (
               <button
@@ -214,27 +161,29 @@ export default function ProductDetailPage() {
         </div>
         
         {/* Color Selection */}
-        <div className="color-section">
-          <div className="section-title">Select Color</div>
-          <div className="color-options">
-            {colors.map(color => (
-              <button
-                key={color.name}
-                className={`color-option ${selectedColor === color.name ? 'selected' : ''}`}
-                style={{ 
-                  backgroundColor: color.value,
-                  border: color.border || 'none'
-                }}
-                onClick={() => setSelectedColor(color.name)}
-                title={color.name}
-              />
-            ))}
+        {colors.length > 0 && (
+          <div className="color-section">
+            <div className="section-title">SELECT COLOR</div>
+            <div className="color-options">
+              {colors.map(color => (
+                <button
+                  key={color}
+                  className={`color-option ${selectedColor === color ? 'selected' : ''}`}
+                  style={{ 
+                    backgroundColor: color.toLowerCase(),
+                    border: color.toLowerCase() === 'white' ? '1px solid #d1d5db' : 'none'
+                  }}
+                  onClick={() => setSelectedColor(color)}
+                  title={color}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Quantity Selector */}
         <div className="quantity-selector">
-          <div className="section-title">Quantity</div>
+          <div className="section-title">QUANTITY</div>
           <div className="quantity-controls">
             <button 
               className="quantity-btn"
@@ -262,127 +211,39 @@ export default function ProductDetailPage() {
         {/* Action Buttons */}
         <div className="action-buttons">
           <button 
-            className="btn btn-primary flex items-center justify-center gap-2"
+            className="btn btn-primary"
             onClick={addToCart}
           >
-            <ShoppingCart size={20} />
             ADD TO CART
           </button>
           <button 
-            className="btn btn-secondary"
+            className="btn btn-outline"
             onClick={buyNow}
           >
             BUY NOW
           </button>
         </div>
         
-        {/* Delivery Info */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3 mb-3">
-            <Truck size={20} className="text-gray-500 mt-1" />
-            <div>
-              <div className="font-medium mb-1">Delivery</div>
-              <div className="text-sm text-gray-600">
-                Enter pincode for delivery options
-              </div>
-              <div className="flex gap-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Enter Pincode"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                  maxLength={6}
-                />
-                <button className="btn bg-primary text-white text-sm px-4">
-                  Check
-                </button>
-              </div>
-            </div>
+        {/* Product Description */}
+        <div className="product-description">
+          <h2 className="description-title">PRODUCT DETAILS</h2>
+          <div className="description-content">
+            {product.description || "Premium quality SIXSEVEN streetwear. Made with attention to detail and designed for comfort and style."}
           </div>
           
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div className="mt-6 space-y-3">
             <div className="flex items-center gap-2">
-              <Shield size={16} className="text-green-600" />
-              <span className="text-sm">7 Days Return</span>
+              <Check size={16} className="text-green-600" />
+              <span>100% Premium Quality</span>
             </div>
             <div className="flex items-center gap-2">
-              <RefreshCw size={16} className="text-green-600" />
-              <span className="text-sm">Free Shipping</span>
+              <Check size={16} className="text-green-600" />
+              <span>Free Shipping on orders above ₹999</span>
             </div>
-          </div>
-        </div>
-        
-        {/* Product Tabs */}
-        <div className="product-tabs">
-          <div className="tab-headers">
-            <button 
-              className={`tab-header ${activeTab === 'details' ? 'active' : ''}`}
-              onClick={() => setActiveTab('details')}
-            >
-              Details
-            </button>
-            <button 
-              className={`tab-header ${activeTab === 'specs' ? 'active' : ''}`}
-              onClick={() => setActiveTab('specs')}
-            >
-              Specifications
-            </button>
-            <button 
-              className={`tab-header ${activeTab === 'reviews' ? 'active' : ''}`}
-              onClick={() => setActiveTab('reviews')}
-            >
-              Reviews
-            </button>
-          </div>
-          
-          <div className="tab-content">
-            {activeTab === 'details' && (
-              <div className="tab-panel active">
-                <div className="space-y-3">
-                  <p>{product.description || "Premium quality product with excellent craftsmanship and attention to detail."}</p>
-                  <ul className="space-y-2">
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-green-600" />
-                      <span>Premium Quality Material</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-green-600" />
-                      <span>Durable and Long Lasting</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-green-600" />
-                      <span>Easy to Maintain</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'specs' && (
-              <div className="tab-panel active">
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Material</span>
-                    <span className="font-medium">100% Cotton</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Fit</span>
-                    <span className="font-medium">Regular Fit</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Wash Care</span>
-                    <span className="font-medium">Machine Wash</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'reviews' && (
-              <div className="tab-panel active">
-                <div className="text-center py-8 text-gray-500">
-                  No reviews yet. Be the first to review!
-                </div>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Check size={16} className="text-green-600" />
+              <span>Easy Returns & Exchanges</span>
+            </div>
           </div>
         </div>
       </div>
