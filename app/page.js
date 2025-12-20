@@ -53,7 +53,7 @@ export default function HomePage() {
     { id: 4, name: "Jackets", icon: <Shirt />, color: "#f59e0b" },
     { id: 5, name: "Shoes", icon: <Footprints />, color: "#ef4444" },
     { id: 6, name: "Watches", icon: <Watch />, color: "#ec4899" },
-    { id: 7, name: "Bags", icon: <Bag />, color: "#6366f1" },
+    { id: 7, name: "Bags", icon: <ShoppingBag />, color: "#6366f1" },
     { id: 8, name: "Accessories", icon: <Glasses />, color: "#14b8a6" },
   ];
 
