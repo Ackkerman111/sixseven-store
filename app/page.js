@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabaseClient";
 import { 
   Search, ShoppingCart, User, Menu, X, 
   ChevronRight, Star, Truck, Shield, RefreshCw,
-  Shirt, Footprints, Watch, Bag, Glasses, Smartphone
+  Shirt, Footprints, Watch, ShoppingBag, Glasses, Smartphone
 } from "lucide-react";
 
 export default function HomePage() {
